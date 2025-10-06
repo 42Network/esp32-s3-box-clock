@@ -17,7 +17,7 @@ jobs:
         # esp32-s3-box-clock-esp32.factory.yaml
         # esp32-s3-box-clock-esp32-c3.factory.yaml
         # esp32-s3-box-clock-esp32-c6.factory.yaml
-        esp32-s3-box-clock-esp32-s3.factory.yaml
+        esp32-s3-box-clock.factory.yaml
       esphome-version: 2025.8.0
       #combined-name: esp32-s3-box-clock
       #### Modify above here to match your project ####
