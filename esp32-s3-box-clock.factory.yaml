@@ -13,7 +13,7 @@ esphome:
 # In this case it is the core yaml file that does not contain the extra things
 # that are provided by this factory yaml file as the user does not need these once adopted.
 dashboard_import:
-  package_import_url: github://esphome/esp32-s3-box-clock/esp32-s3-box-clock.yaml@main
+  package_import_url: github://42Network/esp32-s3-box-clock/esp32-s3-box-clock.yaml@main
 
 # Sets up Bluetooth LE (Only on ESP32) to allow the user
 # to provision wifi credentials to the device.
@@ -35,4 +35,4 @@ update:
   - platform: http_request
     name: None
     id: update_http_request
-    source: https://github.com/esphome/esp32-s3-box-clock/releases/latest/download/esp32-s3-box-clock.manifest.json
+    source: https://github.com/42Network/esp32-s3-box-clock/releases/latest/download/esp32-s3-box-clock.manifest.json
