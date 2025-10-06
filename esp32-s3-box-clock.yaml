@@ -1,3 +1,14 @@
+# ESPHome LVGL Analog Clock for ESP32-S3-Box
+#
+# A clean, readable analog clock face with a dark theme, ticking second hand,
+# and date display for the ESP32-S3-Box and S3-Box-Lite.
+#
+# This file is intended to be used as a package, included from a device-specific
+# YAML configuration.
+#
+# Reference:
+# https://github.com/esphome/wake-word-voice-assistants/blob/main/esp32-s3-box/esp32-s3-box.yaml
+
 esphome:
   name: esp32-s3-box-clock
   friendly_name: ESP32 S3 Box Clock
@@ -6,9 +17,19 @@ esphome:
   name_add_mac_suffix: true
 
 esp32:
-  board: esp32dev
+  board: esp32s3box
+  flash_size: 16MB
+  cpu_frequency: 240MHz
   framework:
     type: esp-idf
+    sdkconfig_options:
+      CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240: "y"
+      CONFIG_ESP32S3_DATA_CACHE_64KB: "y"
+      CONFIG_ESP32S3_DATA_CACHE_LINE_64B: "y"
+
+psram:
+  mode: octal
+  speed: 80MHz
 
 # To be able to get logs from the device via serial and api.
 logger:
@@ -27,3 +48,93 @@ wifi:
 # In combination with the `ap` this allows the user
 # to provision wifi credentials to the device.
 captive_portal:
+
+# Required font for the date/day display.
+font:
+  - file: 'https://fonts.gstatic.com/s/montserrat/v25/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCtr6Hw5aX8.ttf'
+    id: montserrat_16_font
+    size: 16
+
+# ---------------------------------------------------------------------------
+# CORE HARDWARE DEFINITIONS
+# ---------------------------------------------------------------------------
+output:
+  - {platform: ledc, pin: GPIO45, id: backlight_output}
+
+light:
+  - platform: monochromatic
+    name: "${friendly_name} Screen"
+    output: backlight_output
+    restore_mode: RESTORE_DEFAULT_ON
+
+i2c:
+  id: i2c_bus # Required for esp-idf touchscreen driver
+  scl: GPIO18
+  sda: GPIO8
+
+spi:
+  clk_pin: GPIO7
+  mosi_pin: GPIO6
+
+display:
+  - {platform: ili9xxx, id: s3_box_lcd, model: S3BOX, cs_pin: GPIO5, dc_pin: GPIO4, reset_pin: GPIO48, update_interval: never, invert_colors: false, data_rate: 40MHz}
+
+touchscreen:
+  - {platform: ft5x06, id: ft5x06_touch, interrupt_pin: GPIO3, address: 0x18}
+
+# ---------------------------------------------------------------------------
+# LVGL DISPLAY & WIDGETS
+# ---------------------------------------------------------------------------
+lvgl:
+  style_definitions:
+    - id: corner_text_style
+      text_font: montserrat_16_font
+      align: center
+      text_color: 0xE0E0E0 
+      bg_opa: 0 
+  pages:
+    - id: clock_page
+      widgets:
+        - obj: # Main container
+            width: 320, height: 240, align: CENTER, bg_color: 0x000000, radius: 0, pad_all: 0, border_width: 0
+            widgets:
+              - meter: # Clock face, ticks, and hands
+                  height: 240, width: 240, align: CENTER, bg_opa: TRANSP, border_width: 0, text_color: 0xE0E0E0
+                  scales:
+                    - {range_from: 0, range_to: 60, angle_range: 360, rotation: 270, ticks: {width: 1, count: 61, length: 10, color: 0xE0E0E0}, indicators: [{line: {id: minute_hand, width: 3, color: 0xE0E0E0, r_mod: -10, value: 0}}, {line: {id: second_hand, width: 2, color: 0xFF0000, r_mod: -5, value: 0}}]}
+                    - {range_from: 1, range_to: 12, angle_range: 330, rotation: 300, ticks: {width: 1, count: 12, length: 1, major: {stride: 1, width: 4, length: 15, color: 0xE0E0E0, label_gap: 15}}}
+                    - {range_from: 0, range_to: 720, angle_range: 360, rotation: 270, ticks: {count: 0}, indicators: [{line: {id: hour_hand, width: 5, color: 0xE0E0E0, r_mod: -40, value: 0}}]}
+              
+              # Date/Day labels positioned in the corners
+              - label: {id: day_label, styles: corner_text_style, align: BOTTOM_LEFT, x: 5, y: -5}
+              - label: {id: year_label, styles: corner_text_style, align: BOTTOM_RIGHT, x: -5, y: -5}
+              - label: {id: month_day_label, styles: corner_text_style, align: BOTTOM_RIGHT, x: -5, y: -25}
+
+# ---------------------------------------------------------------------------
+# TIME & UPDATE LOGIC
+# ---------------------------------------------------------------------------
+time:
+  - platform: homeassistant
+    id: time_comp
+
+interval:
+  - interval: 1s
+    then:
+      - script.execute: time_update
+
+script:
+  - id: time_update
+    then:
+      # Update clock hands
+      - lvgl.indicator.update: {id: minute_hand, value: !lambda 'return id(time_comp).now().minute;'}
+      - lvgl.indicator.update:
+          id: hour_hand
+          value: !lambda |-
+            auto now = id(time_comp).now();
+            return (now.hour % 12) * 60 + now.minute;
+      - lvgl.indicator.update: {id: second_hand, value: !lambda 'return id(time_comp).now().second;'}
+      
+      # Update date/day labels
+      - lvgl.label.update: {id: day_label, text: !lambda 'return id(time_comp).now().strftime("%A");'}
+      - lvgl.label.update: {id: year_label, text: !lambda 'return id(time_comp).now().strftime("%Y");'}
+      - lvgl.label.update: {id: month_day_label, text: !lambda 'return id(time_comp).now().strftime("%b-%d");'}
