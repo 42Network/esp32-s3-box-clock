@@ -96,19 +96,93 @@ lvgl:
     - id: clock_page
       widgets:
         - obj: # Main container
-            width: 320, height: 240, align: CENTER, bg_color: 0x000000, radius: 0, pad_all: 0, border_width: 0
+            # FIXED: Converted from inline to block format
+            width: 320
+            height: 240
+            align: CENTER
+            bg_color: 0x000000
+            radius: 0
+            pad_all: 0
+            border_width: 0
             widgets:
               - meter: # Clock face, ticks, and hands
-                  height: 240, width: 240, align: CENTER, bg_opa: TRANSP, border_width: 0, text_color: 0xE0E0E0
+                  # FIXED: Converted from inline to block format
+                  height: 240
+                  width: 240
+                  align: CENTER
+                  bg_opa: TRANSP
+                  border_width: 0
+                  text_color: 0xE0E0E0
                   scales:
-                    - {range_from: 0, range_to: 60, angle_range: 360, rotation: 270, ticks: {width: 1, count: 61, length: 10, color: 0xE0E0E0}, indicators: [{line: {id: minute_hand, width: 3, color: 0xE0E0E0, r_mod: -10, value: 0}}, {line: {id: second_hand, width: 2, color: 0xFF0000, r_mod: -5, value: 0}}]}
-                    - {range_from: 1, range_to: 12, angle_range: 330, rotation: 300, ticks: {width: 1, count: 12, length: 1, major: {stride: 1, width: 4, length: 15, color: 0xE0E0E0, label_gap: 15}}}
-                    - {range_from: 0, range_to: 720, angle_range: 360, rotation: 270, ticks: {count: 0}, indicators: [{line: {id: hour_hand, width: 5, color: 0xE0E0E0, r_mod: -40, value: 0}}]}
+                    - range_from: 0
+                      range_to: 60
+                      angle_range: 360
+                      rotation: 270
+                      ticks: {width: 1, count: 61, length: 10, color: 0xE0E0E0}
+                      indicators:
+                        - {line: {id: minute_hand, width: 3, color: 0xE0E0E0, r_mod: -10, value: 0}}
+                        - {line: {id: second_hand, width: 2, color: 0xFF0000, r_mod: -5, value: 0}}
+                    - range_from: 1
+                      range_to: 12
+                      angle_range: 330
+                      rotation: 300
+                      ticks: {width: 1, count: 12, length: 1, major: {stride: 1, width: 4, length: 15, color: 0xE0E0E0, label_gap: 15}}
+                    - range_from: 0
+                      range_to: 720
+                      angle_range: 360
+                      rotation: 270
+                      ticks: {count: 0}
+                      indicators:
+                        - {line: {id: hour_hand, width: 5, color: 0xE0E0E0, r_mod: -40, value: 0}}
               
               # Date/Day labels positioned in the corners
-              - label: {id: day_label, styles: corner_text_style, align: BOTTOM_LEFT, x: 5, y: -5}
-              - label: {id: year_label, styles: corner_text_style, align: BOTTOM_RIGHT, x: -5, y: -5}
-              - label: {id: month_day_label, styles: corner_text_style, align: BOTTOM_RIGHT, x: -5, y: -25}
+              - label:
+                  id: day_label
+                  styles: corner_text_style
+                  align: BOTTOM_LEFT
+                  x: 5
+                  y: -5
+              - label:
+                  id: year_label
+                  styles: corner_text_style
+                  align: BOTTOM_RIGHT
+                  x: -5
+                  y: -5
+              - label:
+                  id: month_day_label
+                  styles: corner_text_style
+                  align: BOTTOM_RIGHT
+                  x: -5
+                  y: -25
+
+# ---------------------------------------------------------------------------
+# TIME & UPDATE LOGIC
+# ---------------------------------------------------------------------------
+time:
+  - platform: homeassistant
+    id: time_comp
+
+interval:
+  - interval: 1s
+    then:
+      - script.execute: time_update
+
+script:
+  - id: time_update
+    then:
+      # Update clock hands
+      - lvgl.indicator.update: {id: minute_hand, value: !lambda 'return id(time_comp).now().minute;'}
+      - lvgl.indicator.update:
+          id: hour_hand
+          value: !lambda |-
+            auto now = id(time_comp).now();
+            return (now.hour % 12) * 60 + now.minute;
+      - lvgl.indicator.update: {id: second_hand, value: !lambda 'return id(time_comp).now().second;'}
+      
+      # Update date/day labels
+      - lvgl.label.update: {id: day_label, text: !lambda 'return id(time_comp).now().strftime("%A");'}
+      - lvgl.label.update: {id: year_label, text: !lambda 'return id(time_comp).now().strftime("%Y");'}
+      - lvgl.label.update: {id: month_day_label, text: !lambda 'return id(time_comp).now().strftime("%b-%d");'}
 
 # ---------------------------------------------------------------------------
 # TIME & UPDATE LOGIC
