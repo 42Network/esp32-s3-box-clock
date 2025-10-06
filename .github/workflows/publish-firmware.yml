@@ -14,12 +14,12 @@ jobs:
     with:
       #### Modify below here to match your project ####
       files: |
-        project-template-esp32.factory.yaml
-        project-template-esp32-c3.factory.yaml
-        project-template-esp32-c6.factory.yaml
-        project-template-esp32-s3.factory.yaml
+        esp32-s3-box-clock-esp32.factory.yaml
+        esp32-s3-box-clock-esp32-c3.factory.yaml
+        esp32-s3-box-clock-esp32-c6.factory.yaml
+        esp32-s3-box-clock-esp32-s3.factory.yaml
       esphome-version: 2025.8.0
-      combined-name: project-template
+      combined-name: esp32-s3-box-clock
       #### Modify above here to match your project ####
 
       release-summary: ${{ github.event.release.body }}
