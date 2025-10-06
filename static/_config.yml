@@ -1,4 +1,4 @@
 # CHANGEME: Set these variable to your liking
-title: ESPHome Project Template
-description: Powered by ESPHome and ESP Web Tools
+title: ESP32 S3 Box Clock Project
+description: An Elegant Analog Clock for ESP32-S3-Box Powered by ESPHome and ESP Web Tools
 theme: jekyll-theme-slate
