@@ -1,6 +1,6 @@
 # About
 
-Add some information about your project here.
+An Elegant Analog Clock for ESP32-S3-Box Powered by ESPHome and ESP Web Tools
 
 # Installation
 
